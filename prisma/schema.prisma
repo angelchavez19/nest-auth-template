@@ -7,11 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 enum Theme {
   LIGHT
   DARK
@@ -30,11 +25,18 @@ model User {
   password        String
   createdAt       DateTime  @default(now())
   dateOfBirth     DateTime?
-  role            Role
+  roleId          Int
+  role            Role      @relation(fields: [roleId], references: [id])
   isActive        Boolean   @default(true)
   isEmailVerified Boolean   @default(false)
   lastLogin       DateTime?
   updatedAt       DateTime  @updatedAt
   language        String?
   theme           Theme?
+}
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
 }
