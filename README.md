@@ -11,58 +11,58 @@ This project is a robust authentication and authorization system developed with 
    - Allows users to create an account through a registration form.
    - Data validation and email confirmation.
 
-2. **Login**
+1. **Login**
 
    - Users can authenticate by entering their credentials.
    - JWT tokens are generated for secure sessions.
 
-3. **JWT Authentication**
+1. **JWT Authentication**
 
    - Uses JWT to handle user authentication.
    - Tokens are signed with a secret key to verify their authenticity.
 
-4. **Role-Based Authorization**
+1. **Role-Based Authorization**
 
    - Roles like `admin`, `user`, or others are assigned dynamically.
    - Specific permissions are granted according to the assigned role.
 
-5. **Route Protection**
+1. **Route Protection**
 
    - Routes are restricted based on authentication and assigned roles.
    - Middleware is used to validate access.
 
-6. **Password Change and Recovery**
+1. **Password Change and Recovery**
 
    - Requests for password resets via email confirmation.
    - Token expiration for enhanced security.
 
-7. **Logout**
+1. **Logout**
 
    - Invalidates the JWT to terminate the user session.
 
-8. **Token Refresh**
+1. **Token Refresh**
 
    - Implements refresh tokens to maintain active sessions without needing a new login.
 
-9. **Auditing and Logs**
+1. **Auditing and Logs**
 
    - Records key activities such as logins, failed attempts, and password changes.
 
-10. **Dynamic Roles and Permission Management**
+1. **Dynamic Roles and Permission Management**
 
-- Create, update, and assign roles dynamically at runtime.
+   - Create, update, and assign roles dynamically at runtime.
 
-11. **OAuth2 / Social Login Support**
+1. **OAuth2 / Social Login Support**
 
-- Allows authentication through providers like Google, Facebook, and GitHub.
+   - Allows authentication through providers like Google, Facebook, and GitHub.
 
-12. **Session Management**
+1. **Session Management**
 
-- Controls simultaneous sessions, allowing or restricting multiple logins.
+   - Controls simultaneous sessions, allowing or restricting multiple logins.
 
-13. **Multi-Factor Authentication (MFA)**
+1. **Multi-Factor Authentication (MFA)**
 
-- Adds an extra layer of security with multi-factor authentication.
+   - Adds an extra layer of security with multi-factor authentication.
 
 ---
 
