@@ -20,8 +20,6 @@ model User {
   profileImage    String?
   email           String    @unique
   token           String?
-  tokenVerified   Boolean
-  expirationToken DateTime
   password        String
   createdAt       DateTime  @default(now())
   dateOfBirth     DateTime?
