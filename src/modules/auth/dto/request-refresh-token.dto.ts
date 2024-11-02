@@ -1,6 +1,6 @@
 import { IsEmail } from 'class-validator';
 
-export class RequestChangePasswordDTO {
+export class RequestTokenRefreshDTO {
   @IsEmail({}, { message: 'Invalid email format.' })
   email: string;
 }
