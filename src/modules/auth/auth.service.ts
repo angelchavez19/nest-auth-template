@@ -84,6 +84,17 @@ export class AuthService {
       .send();
   }
 
+  async logout(response: Response) {
+    response
+      .cookie('jwt', '', {
+        domain: this.clientDomain,
+        expires: new Date(),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .send();
+  }
+
   async confirmEmail(token: string) {
     if (!token)
       throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
