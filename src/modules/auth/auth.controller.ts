@@ -11,6 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { CreateAccountDTO } from './dto/create-account.dto';
 import { LoginDTO } from './dto/login.dto';
+import { RequestChangePasswordDTO } from './dto/request-change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -31,5 +32,10 @@ export class AuthController {
   @HttpCode(200)
   confirmEmail(@Query('token') token: string) {
     return this.authService.confirmEmail(token);
+  }
+
+  @Post('request-change-password')
+  requestChangePassword(@Body() data: RequestChangePasswordDTO) {
+    return this.authService.requestChangePassword(data);
   }
 }

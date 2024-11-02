@@ -11,6 +11,8 @@ import {
   confirmAccountTemplateEmailHTML,
   confirmAccountTemplateEmailText,
 } from './template-email/create-account';
+import { RequestChangePasswordDTO } from './dto/request-change-password.dto';
+import { changePasswordTemplateEmailHTML } from './template-email/request-change-password';
 
 @Injectable()
 export class AuthService {
@@ -101,6 +103,34 @@ export class AuthService {
     } catch {
       throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  async requestChangePassword(data: RequestChangePasswordDTO) {
+    const existingUser = await this._getExistingUserByEmail(data.email);
+
+    if (!existingUser)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    if (!existingUser.isEmailVerified)
+      throw new HttpException(
+        'User account is not confirmed',
+        HttpStatus.CONFLICT,
+      );
+
+    const token = this.jwt.sign({});
+    const url = `${this.clientURL}/auth/confirm-change-password?token=${token}`;
+
+    await this.prisma.user.update({
+      data: { token },
+      where: { email: data.email },
+    });
+
+    await this.email.sendMail({
+      email: existingUser.email,
+      subject: `Password Reset Request <${this.emailHostUser}>`,
+      text: changePasswordTemplateEmailHTML(existingUser.firstName, url),
+      html: changePasswordTemplateEmailHTML(existingUser.firstName, url),
+    });
   }
 
   _getExistingUserByEmail(email: string) {
