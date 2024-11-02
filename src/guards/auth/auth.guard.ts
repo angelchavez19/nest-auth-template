@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
     if (!routeRoles) return true;
 
     const request: Request = context.switchToHttp().getRequest();
-    const token = request.cookies.jwt;
+    const token = request.cookies.access_token;
 
     if (!token) return false;
 

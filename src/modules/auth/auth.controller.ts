@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import {
   Body,
   Controller,
@@ -6,6 +6,7 @@ import {
   HttpCode,
   Post,
   Query,
+  Req,
   Res,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -33,6 +34,12 @@ export class AuthController {
   @HttpCode(200)
   logout(@Res() response: Response) {
     return this.authService.logout(response);
+  }
+
+  @Get('refresh-token')
+  @HttpCode(200)
+  refreshToken(@Req() request: Request, @Res() response: Response) {
+    return this.authService.refreshToken(request, response);
   }
 
   @Get('confirm-email')
