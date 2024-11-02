@@ -1,10 +1,12 @@
 import * as bcrypt from 'bcrypt';
+import { Response } from 'express';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/providers/prisma/prisma';
 import { EmailService } from 'src/providers/email/email';
 import { CreateAccountDTO } from './dto/create-account.dto';
+import { LoginDTO } from './dto/login.dto';
 import {
   confirmAccountTemplateEmailHTML,
   confirmAccountTemplateEmailText,
@@ -20,12 +22,11 @@ export class AuthService {
   ) {}
 
   clientURL = this.config.get<string>('CLIENT_URL');
+  clientDomain = this.config.get<string>('CLIENT_DOMAIN');
   emailHostUser = this.config.get<string>('EMAIL_HOST_USER');
 
   async createAccount(data: CreateAccountDTO) {
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const existingUser = await this._getExistingUserByEmail(data.email);
 
     if (existingUser)
       throw new HttpException('User already exists.', HttpStatus.CONFLICT);
@@ -57,5 +58,39 @@ export class AuthService {
       text: confirmAccountTemplateEmailText(data, url),
       html: confirmAccountTemplateEmailHTML(data, url),
     });
+  }
+
+  async login(data: LoginDTO, response: Response) {
+    const existingUser = await this._getExistingUserByEmail(data.email);
+
+    if (!existingUser || !existingUser.isEmailVerified)
+      return response
+        .status(HttpStatus.NOT_FOUND)
+        .cookie('jwt', '')
+        .send('User not found');
+
+    if (!bcrypt.compareSync(data.password, existingUser.password))
+      return response
+        .status(HttpStatus.UNAUTHORIZED)
+        .cookie('jwt', '')
+        .send('Invalid credentials');
+
+    const jwt = this.jwt.sign({
+      email: existingUser.email,
+      roleId: existingUser.roleId,
+    });
+
+    response
+      .cookie('jwt', jwt, {
+        domain: this.clientDomain,
+        expires: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 3),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .send();
+  }
+
+  async _getExistingUserByEmail(email: string) {
+    return await this.prisma.user.findUnique({ where: { email } });
   }
 }
