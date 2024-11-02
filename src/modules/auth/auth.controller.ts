@@ -29,6 +29,12 @@ export class AuthController {
     return this.authService.login(data, response);
   }
 
+  @Get('logout')
+  @HttpCode(200)
+  logout(@Res() response: Response) {
+    return this.authService.logout(response);
+  }
+
   @Get('confirm-email')
   @HttpCode(200)
   confirmEmail(@Query('token') token: string) {
