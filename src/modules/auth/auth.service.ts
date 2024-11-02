@@ -11,7 +11,7 @@ import {
   confirmAccountTemplateEmailHTML,
   confirmAccountTemplateEmailText,
 } from './template-email/create-account';
-import { RequestChangePasswordDTO } from './dto/request-change-password.dto';
+import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
 import { changePasswordTemplateEmailHTML } from './template-email/request-change-password';
 import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 
@@ -103,7 +103,32 @@ export class AuthService {
     }
   }
 
-  async requestChangePassword(data: RequestChangePasswordDTO) {
+  async requestRefreshAccountCreationToken(data: RequestTokenRefreshDTO) {
+    const existingUser = await this._getExistingUserByEmail(data.email);
+
+    if (!existingUser)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    if (existingUser.isEmailVerified)
+      throw new HttpException('User account is confirmed', HttpStatus.CONFLICT);
+
+    const token = this._getJWT();
+    const url = `${this.clientURL}/auth/confirm-email?token=${token}`;
+
+    await this.prisma.user.update({
+      data: { token },
+      where: { email: data.email },
+    });
+
+    await this.email.sendMail({
+      email: data.email,
+      subject: `Confirm Email <${this.emailHostUser}>`,
+      text: confirmAccountTemplateEmailText(existingUser, url),
+      html: confirmAccountTemplateEmailHTML(existingUser, url),
+    });
+  }
+
+  async requestChangePassword(data: RequestTokenRefreshDTO) {
     const existingUser = await this._getExistingUserByEmail(data.email);
 
     if (!existingUser)

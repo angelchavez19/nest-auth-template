@@ -11,7 +11,7 @@ import {
 import { AuthService } from './auth.service';
 import { CreateAccountDTO } from './dto/create-account.dto';
 import { LoginDTO } from './dto/login.dto';
-import { RequestChangePasswordDTO } from './dto/request-change-password.dto';
+import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
 import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 
 @Controller('auth')
@@ -35,9 +35,15 @@ export class AuthController {
     return this.authService.confirmEmail(token);
   }
 
+  @Post('request-refresh-account-creation-token')
+  @HttpCode(200)
+  requestRefreshAccountCreationToken(@Body() data: RequestTokenRefreshDTO) {
+    return this.authService.requestRefreshAccountCreationToken(data);
+  }
+
   @Post('request-change-password')
   @HttpCode(200)
-  requestChangePassword(@Body() data: RequestChangePasswordDTO) {
+  requestChangePassword(@Body() data: RequestTokenRefreshDTO) {
     return this.authService.requestChangePassword(data);
   }
 
