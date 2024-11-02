@@ -1,5 +1,6 @@
 import * as bcrypt from 'bcrypt';
-import { Response } from 'express';
+import { randomBytes } from 'crypto';
+import { Request, Response } from 'express';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -69,15 +70,31 @@ export class AuthService {
     if (!bcrypt.compareSync(data.password, existingUser.password))
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
 
-    const jwt = this._getJWT({
+    const accessToken = this._getJWT({
       email: existingUser.email,
       roleId: existingUser.roleId,
     });
 
+    const refreshToken = this._generateRefreshToken();
+    const expirationToken = new Date(
+      new Date().getTime() + 1000 * 60 * 60 * 24 * 3,
+    );
+
+    await this.prisma.user.update({
+      data: { refreshToken, expirationToken },
+      where: { email: existingUser.email },
+    });
+
     response
-      .cookie('jwt', jwt, {
+      .cookie('access_token', accessToken, {
         domain: this.clientDomain,
-        expires: new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 3),
+        expires: new Date(new Date().getTime() + 1000 * 60 * 60),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .cookie('refresh_token', refreshToken, {
+        domain: this.clientDomain,
+        expires: expirationToken,
         httpOnly: true,
         sameSite: 'strict',
       })
@@ -86,9 +103,59 @@ export class AuthService {
 
   async logout(response: Response) {
     response
-      .cookie('jwt', '', {
+      .cookie('access_token', '', {
         domain: this.clientDomain,
         expires: new Date(),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .cookie('refresh_token', '', {
+        domain: this.clientDomain,
+        expires: new Date(),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .send();
+  }
+
+  async refreshToken(request: Request, response: Response) {
+    const _refreshToken = request.cookies.refresh_token;
+
+    if (!_refreshToken)
+      throw new HttpException('Invalid refresh token', HttpStatus.FORBIDDEN);
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { refreshToken: _refreshToken },
+    });
+
+    if (!existingUser)
+      throw new HttpException('Invalid refresh token', HttpStatus.FORBIDDEN);
+
+    const accessToken = this._getJWT({
+      email: existingUser.email,
+      roleId: existingUser.roleId,
+    });
+
+    const refreshToken = this._generateRefreshToken();
+    const expirationToken = new Date(
+      new Date().getTime() + 1000 * 60 * 60 * 24 * 3,
+    );
+
+    await this.prisma.user.update({
+      data: { refreshToken, expirationToken },
+      where: { email: existingUser.email },
+    });
+
+    response
+      .cookie('access_token', accessToken, {
+        domain: this.clientDomain,
+        expires: new Date(new Date().getTime() + 1000 * 60 * 60),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .cookie('refresh_token', refreshToken, {
+        domain: this.clientDomain,
+        expires: expirationToken,
         httpOnly: true,
         sameSite: 'strict',
       })
@@ -202,5 +269,9 @@ export class AuthService {
 
   _getExistingUserByToken(token: string) {
     return this.prisma.user.findUnique({ where: { token } });
+  }
+
+  _generateRefreshToken() {
+    return randomBytes(32).toString('hex');
   }
 }

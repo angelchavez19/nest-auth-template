@@ -7,6 +7,7 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @Get()
+  @Roles(['USER'])
   getAllUsers() {
     return this.userService.getAllUsers();
   }
