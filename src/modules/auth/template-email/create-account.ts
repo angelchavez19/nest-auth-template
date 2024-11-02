@@ -13,8 +13,7 @@ ${url}
 
 If you did not create an account, please ignore this email.
 
-Best regards,
-Your Company Name
+Best regards
 `;
 }
 

@@ -11,6 +11,9 @@ import {
   confirmAccountTemplateEmailHTML,
   confirmAccountTemplateEmailText,
 } from './template-email/create-account';
+import { RequestChangePasswordDTO } from './dto/request-change-password.dto';
+import { changePasswordTemplateEmailHTML } from './template-email/request-change-password';
+import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,9 +37,6 @@ export class AuthService {
     const token = this.jwt.sign({});
     const url = `${this.clientURL}/auth/confirm-email?token=${token}`;
 
-    const salt = bcrypt.genSaltSync(10);
-    const password = bcrypt.hashSync(data.password, salt);
-
     try {
       await this.prisma.user.create({
         data: {
@@ -44,7 +44,7 @@ export class AuthService {
           lastName: data.lastName,
           email: data.email,
           token,
-          password,
+          password: this._getHashedPassword(data.password),
           roleId: data.roleId || 1,
         },
       });
@@ -69,7 +69,7 @@ export class AuthService {
     if (!bcrypt.compareSync(data.password, existingUser.password))
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
 
-    const jwt = this.jwt.sign({
+    const jwt = this._getJWT({
       email: existingUser.email,
       roleId: existingUser.roleId,
     });
@@ -90,7 +90,7 @@ export class AuthService {
 
     const existingUser = await this._getExistingUserByToken(token);
 
-    if (!existingUser)
+    if (!existingUser || existingUser.isEmailVerified)
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     try {
@@ -101,6 +101,63 @@ export class AuthService {
     } catch {
       throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
+  }
+
+  async requestChangePassword(data: RequestChangePasswordDTO) {
+    const existingUser = await this._getExistingUserByEmail(data.email);
+
+    if (!existingUser)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    if (!existingUser.isEmailVerified)
+      throw new HttpException(
+        'User account is not confirmed',
+        HttpStatus.CONFLICT,
+      );
+
+    const token = this._getJWT();
+    const url = `${this.clientURL}/auth/confirm-change-password?token=${token}`;
+
+    await this.prisma.user.update({
+      data: { token },
+      where: { email: data.email },
+    });
+
+    await this.email.sendMail({
+      email: existingUser.email,
+      subject: `Password Reset Request <${this.emailHostUser}>`,
+      text: changePasswordTemplateEmailHTML(existingUser.firstName, url),
+      html: changePasswordTemplateEmailHTML(existingUser.firstName, url),
+    });
+  }
+
+  async confirmChangePassword(data: ConfirmChangePasswordDTO, token: string) {
+    if (!token)
+      throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
+
+    try {
+      this.jwt.verify(token);
+    } catch {
+      throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
+    }
+
+    const existingUser = await this._getExistingUserByToken(token);
+
+    if (!existingUser || !existingUser.isEmailVerified)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    await this.prisma.user.update({
+      data: { token: null, password: this._getHashedPassword(data.password) },
+      where: { token },
+    });
+  }
+
+  _getHashedPassword(password: string) {
+    return bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+  }
+
+  _getJWT(payload: object = {}) {
+    return this.jwt.sign(payload);
   }
 
   _getExistingUserByEmail(email: string) {
