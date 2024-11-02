@@ -19,7 +19,7 @@ model User {
   lastName        String?
   profileImage    String?
   email           String    @unique
-  token           String?
+  token           String?   @unique
   password        String
   createdAt       DateTime  @default(now())
   dateOfBirth     DateTime?

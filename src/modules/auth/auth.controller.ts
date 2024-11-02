@@ -1,5 +1,13 @@
 import { Response } from 'express';
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAccountDTO } from './dto/create-account.dto';
 import { LoginDTO } from './dto/login.dto';
@@ -10,12 +18,18 @@ export class AuthController {
 
   @Post('account')
   createAccount(@Body() data: CreateAccountDTO) {
-    this.authService.createAccount(data);
+    return this.authService.createAccount(data);
   }
 
   @Post('login')
   @HttpCode(200)
   login(@Body() data: LoginDTO, @Res() response: Response) {
-    this.authService.login(data, response);
+    return this.authService.login(data, response);
+  }
+
+  @Get('confirm-email')
+  @HttpCode(200)
+  confirmEmail(@Query('token') token: string) {
+    return this.authService.confirmEmail(token);
   }
 }

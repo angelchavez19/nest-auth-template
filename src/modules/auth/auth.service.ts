@@ -31,7 +31,7 @@ export class AuthService {
     if (existingUser)
       throw new HttpException('User already exists.', HttpStatus.CONFLICT);
 
-    const token = this.jwt.sign({ email: data.email });
+    const token = this.jwt.sign({});
     const url = `${this.clientURL}/auth/confirm-email?token=${token}`;
 
     const salt = bcrypt.genSaltSync(10);
@@ -64,16 +64,10 @@ export class AuthService {
     const existingUser = await this._getExistingUserByEmail(data.email);
 
     if (!existingUser || !existingUser.isEmailVerified)
-      return response
-        .status(HttpStatus.NOT_FOUND)
-        .cookie('jwt', '')
-        .send('User not found');
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     if (!bcrypt.compareSync(data.password, existingUser.password))
-      return response
-        .status(HttpStatus.UNAUTHORIZED)
-        .cookie('jwt', '')
-        .send('Invalid credentials');
+      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
 
     const jwt = this.jwt.sign({
       email: existingUser.email,
@@ -90,7 +84,30 @@ export class AuthService {
       .send();
   }
 
-  async _getExistingUserByEmail(email: string) {
-    return await this.prisma.user.findUnique({ where: { email } });
+  async confirmEmail(token: string) {
+    if (!token)
+      throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
+
+    const existingUser = await this._getExistingUserByToken(token);
+
+    if (!existingUser)
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+
+    try {
+      await this.prisma.user.update({
+        data: { token: null, isEmailVerified: true },
+        where: { token },
+      });
+    } catch {
+      throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  _getExistingUserByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  _getExistingUserByToken(token: string) {
+    return this.prisma.user.findUnique({ where: { token } });
   }
 }
