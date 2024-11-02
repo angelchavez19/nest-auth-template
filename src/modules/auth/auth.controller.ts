@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAccountDTO } from './dto/create-account.dto';
+import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 import { LoginDTO } from './dto/login.dto';
 import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
-import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 
 @Controller('auth')
 export class AuthController {

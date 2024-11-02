@@ -7,13 +7,13 @@ import { PrismaService } from 'src/providers/prisma/prisma';
 import { EmailService } from 'src/providers/email/email';
 import { CreateAccountDTO } from './dto/create-account.dto';
 import { LoginDTO } from './dto/login.dto';
+import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
+import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
 import {
   confirmAccountTemplateEmailHTML,
   confirmAccountTemplateEmailText,
 } from './template-email/create-account';
-import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
 import { changePasswordTemplateEmailHTML } from './template-email/request-change-password';
-import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 
 @Injectable()
 export class AuthService {
