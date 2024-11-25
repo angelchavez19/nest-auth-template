@@ -24,10 +24,16 @@ export class CreateAccountDTO {
 
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long.' })
-  @MaxLength(255, { message: 'Password must not exceed 255 characters.' })
-  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).*$/, {
-    message:
-      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+  @MaxLength(72, { message: 'Password must not exceed 72 characters.' })
+  @Matches(
+    /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,72}$/,
+    {
+      message:
+        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.',
+    },
+  )
+  @Matches(/^[\x20-\x7E]+$/, {
+    message: 'Password must not contain Unicode or invalid characters.',
   })
   password: string;
 
