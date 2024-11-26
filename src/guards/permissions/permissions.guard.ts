@@ -22,8 +22,8 @@ export class PermissionsGuard implements CanActivate {
 
   tokenManager = new TokenManager(this.jwt);
 
-  async canActivate(context: ExecutionContext) {
-    const requiredPermissions = this.reflector.get(
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredPermissions: string[] = this.reflector.get<string[]>(
       Permissions,
       context.getHandler(),
     );
@@ -36,12 +36,30 @@ export class PermissionsGuard implements CanActivate {
     if (!payload) return false;
 
     const permissions = await this.prisma.rolePermission.findMany({
-      select: { permission: { select: { name: true } } },
-      where: { roleId: payload.roleId, permission: { route: request.url } },
+      select: { permission: { select: { name: true, route: true } } },
+      where: { roleId: payload.roleId },
     });
 
-    return requiredPermissions.every((perm) =>
-      permissions.map((p) => p.permission.name).includes(perm),
+    const userPermissions = permissions.map((p) => ({
+      name: p.permission.name,
+      route: p.permission.route,
+    }));
+
+    const hasPermission = requiredPermissions.every((perm) =>
+      userPermissions.some(
+        (userPerm) =>
+          this.matchRoute(request.url, userPerm.route) &&
+          userPerm.name === perm,
+      ),
     );
+
+    return hasPermission;
+  }
+
+  private matchRoute(requestUrl: string, permissionRoute: string): boolean {
+    const routePattern = new RegExp(
+      '^' + permissionRoute.replace(/:\w+/g, '\\w+').replace(/\*/g, '.*') + '$',
+    );
+    return routePattern.test(requestUrl);
   }
 }

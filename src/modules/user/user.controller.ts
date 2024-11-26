@@ -15,8 +15,8 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles(['ADMIN'])
-  @Permissions(['Create Users'])
+  @Roles(['USER'])
+  @Permissions(['View Only User'])
   getInfoUser(@Param('id') id: string) {
     return this.userService.getInfoUser(Number(id));
   }
