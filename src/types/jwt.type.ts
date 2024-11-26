@@ -1,4 +1,4 @@
-export interface JwtPayloadI {
+export interface AccessTokenJwtPayloadI {
   email: string;
   roleId: number;
   iat: number;

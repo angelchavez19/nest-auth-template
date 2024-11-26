@@ -8,12 +8,12 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { TokenManager } from 'src/common/token-manager.common';
-import { Roles } from 'src/decorators/role/role.decorator';
+import { Permissions } from 'src/decorators/permission/permission.decorator';
 import { PrismaService } from 'src/providers/prisma/prisma';
 
 @Global()
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class PermissionsGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private jwt: JwtService,
@@ -23,21 +23,25 @@ export class AuthGuard implements CanActivate {
   tokenManager = new TokenManager(this.jwt);
 
   async canActivate(context: ExecutionContext) {
-    const routeRoles = this.reflector.get(Roles, context.getHandler());
+    const requiredPermissions = this.reflector.get(
+      Permissions,
+      context.getHandler(),
+    );
 
-    if (!routeRoles) return true;
+    if (!requiredPermissions) return true;
 
     const request: Request = context.switchToHttp().getRequest();
     const payload = this.tokenManager.getAccessTokenFromRequest(request);
 
     if (!payload) return false;
 
-    const userRole = await this.prisma.role.findUnique({
-      where: { id: payload.roleId },
+    const permissions = await this.prisma.rolePermission.findMany({
+      select: { permission: { select: { name: true } } },
+      where: { roleId: payload.roleId, permission: { route: request.url } },
     });
 
-    if (!userRole || !routeRoles.includes(userRole.name)) return false;
-
-    return true;
+    return requiredPermissions.every((perm) =>
+      permissions.map((p) => p.permission.name).includes(perm),
+    );
   }
 }

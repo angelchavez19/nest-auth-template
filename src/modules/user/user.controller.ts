@@ -1,6 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { Roles } from 'src/decorators/role/role.decorator';
 import { UserService } from './user.service';
+import { Permissions } from 'src/decorators/permission/permission.decorator';
 
 @Controller('user')
 export class UserController {
@@ -8,12 +9,14 @@ export class UserController {
 
   @Get()
   @Roles(['USER'])
+  @Permissions(['View Users'])
   getAllUsers() {
     return this.userService.getAllUsers();
   }
 
   @Get(':id')
   @Roles(['ADMIN'])
+  @Permissions(['Create Users'])
   getInfoUser(@Param('id') id: string) {
     return this.userService.getInfoUser(Number(id));
   }
