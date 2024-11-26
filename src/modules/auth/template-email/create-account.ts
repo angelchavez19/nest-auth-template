@@ -1,7 +1,12 @@
 import { CreateAccountDTO } from '../dto/create-account.dto';
 
+interface ConfirmAccountI {
+  firstName: string;
+  lastName: string;
+}
+
 export function confirmAccountTemplateEmailText(
-  user: CreateAccountDTO,
+  user: ConfirmAccountI,
   url: string,
 ) {
   return `

@@ -34,6 +34,7 @@ export class PermissionsGuard implements CanActivate {
     const payload = this.tokenManager.getAccessTokenFromRequest(request);
 
     if (!payload) return false;
+    if (payload.role === 'ADMIN') return true;
 
     const permissions = await this.prisma.rolePermission.findMany({
       select: { permission: { select: { name: true, route: true } } },
