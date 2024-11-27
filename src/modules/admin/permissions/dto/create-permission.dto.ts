@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
-export class CreatePermissionsDTO {
+export class CreatePermissionDTO {
   @IsNotEmpty()
   @IsString()
   name: string;
