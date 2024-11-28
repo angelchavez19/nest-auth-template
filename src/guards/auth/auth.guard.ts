@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import { TokenManager } from 'src/common/token-manager.common';
 import { Roles } from 'src/decorators/role/role.decorator';
 import { PrismaService } from 'src/providers/prisma/prisma';
-import { JwtPayloadI } from 'src/types/jwt.type';
 
 @Global()
 @Injectable()
@@ -20,25 +20,20 @@ export class AuthGuard implements CanActivate {
     private prisma: PrismaService,
   ) {}
 
+  tokenManager = new TokenManager(this.jwt);
+
   async canActivate(context: ExecutionContext) {
     const routeRoles = this.reflector.get(Roles, context.getHandler());
 
     if (!routeRoles) return true;
 
     const request: Request = context.switchToHttp().getRequest();
-    const token = request.cookies.access_token;
+    const payload = this.tokenManager.getAccessTokenFromRequest(request);
 
-    if (!token) return false;
-
-    let jwtPayload: JwtPayloadI;
-    try {
-      jwtPayload = this.jwt.verify<JwtPayloadI>(token);
-    } catch {
-      return false;
-    }
+    if (!payload) return false;
 
     const userRole = await this.prisma.role.findUnique({
-      where: { id: jwtPayload.roleId },
+      where: { id: payload.roleId },
     });
 
     if (!userRole || !routeRoles.includes(userRole.name)) return false;

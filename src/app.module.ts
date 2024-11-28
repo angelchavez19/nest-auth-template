@@ -6,6 +6,8 @@ import { UserModule } from './modules/user/user.module';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './guards/auth/auth.guard';
 import { PrismaService } from './providers/prisma/prisma';
+import { PermissionsGuard } from './guards/permissions/permissions.guard';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { PrismaService } from './providers/prisma/prisma';
     }),
     AuthModule,
     UserModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [
@@ -27,6 +30,10 @@ import { PrismaService } from './providers/prisma/prisma';
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
   ],
 })

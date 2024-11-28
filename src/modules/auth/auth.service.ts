@@ -72,6 +72,7 @@ export class AuthService {
 
     const accessToken = this._getJWT({
       email: existingUser.email,
+      role: existingUser.role.name,
       roleId: existingUser.roleId,
     });
 
@@ -264,7 +265,20 @@ export class AuthService {
   }
 
   _getExistingUserByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    return this.prisma.user.findUnique({
+      select: {
+        email: true,
+        isEmailVerified: true,
+        password: true,
+        firstName: true,
+        lastName: true,
+        roleId: true,
+        role: {
+          select: { name: true },
+        },
+      },
+      where: { email },
+    });
   }
 
   _getExistingUserByToken(token: string) {
