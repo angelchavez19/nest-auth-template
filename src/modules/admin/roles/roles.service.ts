@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/providers/prisma/prisma';
 import { CreateRoleDTO } from './dto/create-role.dto';
 import { UpdateRoleNameDTO } from './dto/update-role-name.dto';
+import { AssignRoleDTO } from './dto/assign-role.dto';
 
 @Injectable()
 export class RolesService {
@@ -89,6 +90,20 @@ export class RolesService {
       });
     } catch {
       throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
+    }
+  }
+
+  async assignRole(data: AssignRoleDTO) {
+    try {
+      await this.prisma.user.update({
+        data: { roleId: data.roleId },
+        where: { id: data.userId },
+      });
+    } catch {
+      throw new HttpException(
+        'User id or role id not exists',
+        HttpStatus.NOT_FOUND,
+      );
     }
   }
 }

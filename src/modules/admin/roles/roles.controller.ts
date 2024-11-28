@@ -7,11 +7,13 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Put,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { Roles } from 'src/decorators/role/role.decorator';
 import { CreateRoleDTO } from './dto/create-role.dto';
 import { UpdateRoleNameDTO } from './dto/update-role-name.dto';
+import { AssignRoleDTO } from './dto/assign-role.dto';
 
 @Controller('admin/roles')
 export class RolesController {
@@ -42,5 +44,11 @@ export class RolesController {
   @Roles(['ADMIN'])
   deleteRole(@Param('id', ParseIntPipe) id: number) {
     return this.rolesService.deleteRole(id);
+  }
+
+  @Put('/assign')
+  @Roles(['ADMIN'])
+  assignRole(@Body() data: AssignRoleDTO) {
+    return this.rolesService.assignRole(data);
   }
 }
