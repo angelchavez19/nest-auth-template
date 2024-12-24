@@ -12,6 +12,11 @@ enum Theme {
   DARK
 }
 
+enum Provider {
+  GOOGLE
+  GITHUB
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   username        String?
@@ -22,7 +27,8 @@ model User {
   token           String?   @unique
   refreshToken    String?   @unique
   expirationToken DateTime?
-  password        String
+  password        String?
+  provider        Provider?
   createdAt       DateTime  @default(now())
   dateOfBirth     DateTime?
   roleId          Int
