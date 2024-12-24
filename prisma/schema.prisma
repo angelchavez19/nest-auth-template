@@ -18,27 +18,30 @@ enum Provider {
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
-  username        String?
-  firstName       String?
-  lastName        String?
-  profileImage    String?
-  email           String    @unique
-  token           String?   @unique
-  refreshToken    String?   @unique
-  expirationToken DateTime?
-  password        String?
-  provider        Provider?
-  createdAt       DateTime  @default(now())
-  dateOfBirth     DateTime?
-  roleId          Int
-  role            Role      @relation(fields: [roleId], references: [id])
-  isActive        Boolean   @default(true)
-  isEmailVerified Boolean   @default(false)
-  lastLogin       DateTime?
-  updatedAt       DateTime  @updatedAt
-  language        String?
-  theme           Theme?
+  id               Int       @id @default(autoincrement())
+  username         String?
+  firstName        String?
+  lastName         String?
+  profileImage     String?
+  email            String    @unique
+  token            String?   @unique
+  refreshToken     String?   @unique
+  expirationToken  DateTime?
+  password         String?
+  provider         Provider?
+  createdAt        DateTime  @default(now())
+  dateOfBirth      DateTime?
+  roleId           Int
+  role             Role      @relation(fields: [roleId], references: [id])
+  isActive         Boolean   @default(true)
+  isEmailVerified  Boolean   @default(false)
+  lastLogin        DateTime?
+  updatedAt        DateTime  @updatedAt
+  language         String?
+  theme            Theme?
+  twoFactorSecret  String?
+  twoFactorIV      String?
+  twoFactorEnabled Boolean   @default(false)
 }
 
 model Role {

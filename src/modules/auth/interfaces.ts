@@ -1,4 +1,5 @@
 export interface ExistingUserI {
+  id: number;
   email: string;
   role: {
     name: string;
@@ -8,4 +9,7 @@ export interface ExistingUserI {
   lastName: string;
   password: string;
   isEmailVerified: boolean;
+  twoFactorSecret: string | null;
+  twoFactorIV: string | null;
+  twoFactorEnabled: boolean;
 }

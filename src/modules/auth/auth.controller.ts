@@ -15,12 +15,14 @@ import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 import { LoginDTO } from './dto/login.dto';
 import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
 import { SocialLoginDTO } from './dto/social-login.dto';
+import { TwoFactorAutenticationDTO } from './dto/two-factor-autentication.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('account')
+  @HttpCode(200)
   createAccount(@Body() data: CreateAccountDTO) {
     return this.authService.createAccount(data);
   }
@@ -41,6 +43,16 @@ export class AuthController {
   @HttpCode(200)
   githubSocialLogin(@Query('code') code: string, @Res() response: Response) {
     return this.authService.githubSocialLogin(code, response);
+  }
+
+  @Post('2fa')
+  @HttpCode(200)
+  twoFactorAuthenticate(
+    @Body() data: TwoFactorAutenticationDTO,
+    @Req() request: Request,
+    @Res() response: Response,
+  ) {
+    return this.authService.twoFactorAuthenticate(data, request, response);
   }
 
   @Get('logout')

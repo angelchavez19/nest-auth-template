@@ -1,3 +1,4 @@
+import * as speakeasy from 'speakeasy';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 import { Request, Response } from 'express';
@@ -23,10 +24,11 @@ import {
 } from 'src/types/google-credentials.type';
 import { ExistingUserI } from './interfaces';
 import {
-  GithubUserCredentialsI,
   GithubUserEmailI,
   GithubUserI,
 } from 'src/types/github-credentials.type';
+import { TwoFactorAutenticationDTO } from './dto/two-factor-autentication.dto';
+import { TwoFactorAuthenticationManager } from 'src/common/2fa.common';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +47,9 @@ export class AuthService {
   githubClientID = this.config.get<string>('GITHUB_OAUTH_CLIENT_ID');
   githubClientSecret = this.config.get<string>('GITHUB_OAUTH_CLIENT_SECRET');
   githubRedirectUrl = this.config.get<string>('GITHUB_OAUTH_REDIRECT_URL');
+  encryptionKey = this.config.get<string>('ENCRYPTION_KEY');
+
+  twoFactorManager = new TwoFactorAuthenticationManager();
 
   async createAccount(data: CreateAccountDTO) {
     const existingUser = await this._getExistingUserByEmail(data.email);
@@ -157,6 +162,50 @@ export class AuthService {
     response.send();
   }
 
+  async twoFactorAuthenticate(
+    data: TwoFactorAutenticationDTO,
+    request: Request,
+    response: Response,
+  ) {
+    if (!request.cookies.user_id)
+      throw new HttpException('Login is required.', HttpStatus.FORBIDDEN);
+
+    const userID = Number(request.cookies.user_id);
+
+    const user = await this.prisma.user.findUnique({
+      select: this.selectExistingUser,
+      where: { id: userID },
+    });
+
+    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user.twoFactorEnabled)
+      throw new HttpException(
+        'Two factor is not enabled',
+        HttpStatus.FORBIDDEN,
+      );
+
+    const secret = this.twoFactorManager.decryptSecret(
+      user.twoFactorSecret,
+      this.encryptionKey,
+      user.twoFactorIV,
+    );
+
+    const verified = speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token: data.totpCode,
+    });
+
+    if (!verified)
+      throw new HttpException(
+        "User TOTP code isn't valid",
+        HttpStatus.UNAUTHORIZED,
+      );
+
+    await this._generateLoginTokens(user, response, false);
+    response.send();
+  }
+
   async logout(response: Response) {
     response
       .cookie('access_token', '', {
@@ -166,6 +215,12 @@ export class AuthService {
         sameSite: 'strict',
       })
       .cookie('refresh_token', '', {
+        domain: this.clientDomain,
+        expires: new Date(),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .cookie('user_id', '', {
         domain: this.clientDomain,
         expires: new Date(),
         httpOnly: true,
@@ -320,6 +375,7 @@ export class AuthService {
   }
 
   selectExistingUser = {
+    id: true,
     email: true,
     isEmailVerified: true,
     password: true,
@@ -329,6 +385,9 @@ export class AuthService {
     role: {
       select: { name: true },
     },
+    twoFactorSecret: true,
+    twoFactorIV: true,
+    twoFactorEnabled: true,
   };
 
   _getExistingUserByEmail(email: string) {
@@ -374,12 +433,27 @@ export class AuthService {
     }
   }
 
-  async _generateLoginTokens(user: ExistingUserI, response: Response) {
+  async _generateLoginTokens(
+    user: ExistingUserI,
+    response: Response,
+    twoFA: boolean = true,
+  ) {
     const accessToken = this._getJWT({
+      id: user.id,
       email: user.email,
       role: user.role.name,
       roleId: user.roleId,
     });
+
+    if (user.twoFactorEnabled && twoFA) {
+      response.cookie('user_id', user.id, {
+        domain: this.clientDomain,
+        expires: new Date(new Date().getTime() + 1000 * 60 * 15),
+        httpOnly: true,
+        sameSite: 'strict',
+      });
+      throw new HttpException('2fa_required', HttpStatus.UNAUTHORIZED);
+    }
 
     const refreshToken = this._generateRefreshToken();
     const expirationToken = new Date(

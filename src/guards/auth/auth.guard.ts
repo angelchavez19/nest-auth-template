@@ -25,12 +25,15 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const routeRoles = this.reflector.get(Roles, context.getHandler());
 
-    if (!routeRoles) return true;
-
-    const request: Request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest();
     const payload = this.tokenManager.getAccessTokenFromRequest(request);
 
-    if (!payload) return false;
+    if (!payload && !routeRoles) return true;
+    if (!payload && routeRoles) return false;
+
+    request.user = payload;
+
+    if (!routeRoles) return true;
 
     const userRole = await this.prisma.role.findUnique({
       where: { id: payload.roleId },
