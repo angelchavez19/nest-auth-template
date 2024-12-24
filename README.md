@@ -54,7 +54,7 @@ This project is a robust authentication and authorization system developed with 
 
 1. **OAuth2 / Social Login Support**
 
-   - Allows authentication through providers like Google, Facebook, and GitHub.
+   - Allows authentication through providers like Google and GitHub.
 
 1. **Session Management**
 

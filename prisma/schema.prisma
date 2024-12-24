@@ -14,7 +14,6 @@ enum Theme {
 
 enum Provider {
   GOOGLE
-  FACEBOOK
   GITHUB
 }
 

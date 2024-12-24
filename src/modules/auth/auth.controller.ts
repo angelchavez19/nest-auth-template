@@ -37,6 +37,12 @@ export class AuthController {
     return this.authService.googleSocialLogin(data, response);
   }
 
+  @Get('github-social-login')
+  @HttpCode(200)
+  githubSocialLogin(@Query('code') code: string, @Res() response: Response) {
+    return this.authService.githubSocialLogin(code, response);
+  }
+
   @Get('logout')
   @HttpCode(200)
   logout(@Res() response: Response) {
