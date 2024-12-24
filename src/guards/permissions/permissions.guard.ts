@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { TokenManager } from 'src/common/token-manager.common';
 import { Permissions } from 'src/decorators/permission/permission.decorator';
 import { PrismaService } from 'src/providers/prisma/prisma';
+import { JWTUserPayloadI } from 'src/types/jwt.type';
 
 @Global()
 @Injectable()
@@ -30,8 +31,8 @@ export class PermissionsGuard implements CanActivate {
 
     if (!requiredPermissions) return true;
 
-    const request: Request = context.switchToHttp().getRequest();
-    const payload = this.tokenManager.getAccessTokenFromRequest(request);
+    const request = context.switchToHttp().getRequest();
+    const payload: JWTUserPayloadI = request.user;
 
     if (!payload) return false;
     if (payload.role === 'ADMIN') return true;
@@ -45,6 +46,7 @@ export class PermissionsGuard implements CanActivate {
       name: p.permission.name,
       route: p.permission.route,
     }));
+    console.log(permissions, userPermissions);
 
     const hasPermission = requiredPermissions.every((perm) =>
       userPermissions.some(

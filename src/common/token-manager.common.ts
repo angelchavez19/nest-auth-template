@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { AccessTokenJwtPayloadI } from 'src/types/jwt.type';
+import { JWTUserPayloadI } from 'src/types/jwt.type';
 
 export class TokenManager {
   constructor(private jwt: JwtService) {}
@@ -10,7 +10,7 @@ export class TokenManager {
 
     if (!accessToken) return;
 
-    return this.verifyToken<AccessTokenJwtPayloadI>(accessToken);
+    return this.verifyToken<JWTUserPayloadI>(accessToken);
   }
 
   verifyToken<T extends object = any>(token: string) {
