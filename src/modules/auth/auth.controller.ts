@@ -14,6 +14,7 @@ import { CreateAccountDTO } from './dto/create-account.dto';
 import { ConfirmChangePasswordDTO } from './dto/confirm-change-password.dto';
 import { LoginDTO } from './dto/login.dto';
 import { RequestTokenRefreshDTO } from './dto/request-refresh-token.dto';
+import { SocialLoginDTO } from './dto/social-login.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -28,6 +29,12 @@ export class AuthController {
   @HttpCode(200)
   login(@Body() data: LoginDTO, @Res() response: Response) {
     return this.authService.login(data, response);
+  }
+
+  @Post('google-social-login')
+  @HttpCode(200)
+  googleSocialLogin(@Body() data: SocialLoginDTO, @Res() response: Response) {
+    return this.authService.googleSocialLogin(data, response);
   }
 
   @Get('logout')

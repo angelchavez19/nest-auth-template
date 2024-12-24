@@ -15,6 +15,13 @@ import {
   confirmAccountTemplateEmailText,
 } from './template-email/create-account';
 import { changePasswordTemplateEmailHTML } from './template-email/request-change-password';
+import { SocialLoginDTO } from './dto/social-login.dto';
+import axios from 'axios';
+import {
+  GoogleUserCredentialsI,
+  GoogleUserInfoI,
+} from 'src/types/google-credentials.type';
+import { ExistingUserI } from './interfaces';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +35,8 @@ export class AuthService {
   clientURL = this.config.get<string>('CLIENT_URL');
   clientDomain = this.config.get<string>('CLIENT_DOMAIN');
   emailHostUser = this.config.get<string>('EMAIL_HOST_USER');
+  googleClientID = this.config.get<string>('GOOGLE_CLIENT_ID');
+  googleClientSecret = this.config.get<string>('GOOGLE_CLIENT_SECRET');
 
   async createAccount(data: CreateAccountDTO) {
     const existingUser = await this._getExistingUserByEmail(data.email);
@@ -70,36 +79,42 @@ export class AuthService {
     if (!bcrypt.compareSync(data.password, existingUser.password))
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
 
-    const accessToken = this._getJWT({
-      email: existingUser.email,
-      role: existingUser.role.name,
-      roleId: existingUser.roleId,
-    });
+    await this._generateLoginTokens(existingUser, response);
+    response.send();
+  }
 
-    const refreshToken = this._generateRefreshToken();
-    const expirationToken = new Date(
-      new Date().getTime() + 1000 * 60 * 60 * 24 * 3,
+  async googleSocialLogin(data: SocialLoginDTO, response: Response) {
+    const userData = await this._googleGetTokenAndUserInfo(data.code);
+
+    const existingUser = await this._getExistingUserByEmail(
+      userData.userInfo.email,
     );
 
-    await this.prisma.user.update({
-      data: { refreshToken, expirationToken },
-      where: { email: existingUser.email },
-    });
+    if (!existingUser) {
+      try {
+        const user = await this.prisma.user.create({
+          data: {
+            firstName: userData.userInfo.given_name,
+            lastName: userData.userInfo.family_name,
+            email: userData.userInfo.email,
+            profileImage: userData.userInfo.picture,
+            provider: 'GOOGLE',
+            roleId: 1,
+            isEmailVerified: true,
+          },
+          select: this.selectExistingUser,
+        });
 
-    response
-      .cookie('access_token', accessToken, {
-        domain: this.clientDomain,
-        expires: new Date(new Date().getTime() + 1000 * 60 * 60),
-        httpOnly: true,
-        sameSite: 'strict',
-      })
-      .cookie('refresh_token', refreshToken, {
-        domain: this.clientDomain,
-        expires: expirationToken,
-        httpOnly: true,
-        sameSite: 'strict',
-      })
-      .send();
+        await this._generateLoginTokens(user, response);
+        response.send();
+        return;
+      } catch {
+        throw new HttpException('Something wrong', HttpStatus.CONFLICT);
+      }
+    }
+
+    await this._generateLoginTokens(existingUser, response);
+    response.send();
   }
 
   async logout(response: Response) {
@@ -264,19 +279,21 @@ export class AuthService {
     return this.jwt.sign(payload);
   }
 
+  selectExistingUser = {
+    email: true,
+    isEmailVerified: true,
+    password: true,
+    firstName: true,
+    lastName: true,
+    roleId: true,
+    role: {
+      select: { name: true },
+    },
+  };
+
   _getExistingUserByEmail(email: string) {
     return this.prisma.user.findUnique({
-      select: {
-        email: true,
-        isEmailVerified: true,
-        password: true,
-        firstName: true,
-        lastName: true,
-        roleId: true,
-        role: {
-          select: { name: true },
-        },
-      },
+      select: this.selectExistingUser,
       where: { email },
     });
   }
@@ -287,5 +304,65 @@ export class AuthService {
 
   _generateRefreshToken() {
     return randomBytes(32).toString('hex');
+  }
+
+  async _googleGetTokenAndUserInfo(code: string) {
+    try {
+      const response = await axios.post<GoogleUserCredentialsI>(
+        'https://oauth2.googleapis.com/token',
+        {
+          code,
+          client_id: this.googleClientID,
+          client_secret: this.googleClientSecret,
+          redirect_uri: 'postmessage',
+          grant_type: 'authorization_code',
+        },
+      );
+
+      const userResponse = await axios.get<GoogleUserInfoI>(
+        'https://www.googleapis.com/oauth2/v3/userinfo',
+        {
+          headers: {
+            Authorization: `Bearer ${response.data.access_token}`,
+          },
+        },
+      );
+
+      return { userCredentials: response.data, userInfo: userResponse.data };
+    } catch {
+      throw new HttpException('Invalid user login', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  async _generateLoginTokens(user: ExistingUserI, response: Response) {
+    const accessToken = this._getJWT({
+      email: user.email,
+      role: user.role.name,
+      roleId: user.roleId,
+    });
+
+    const refreshToken = this._generateRefreshToken();
+    const expirationToken = new Date(
+      new Date().getTime() + 1000 * 60 * 60 * 24 * 3,
+    );
+
+    await this.prisma.user.update({
+      data: { refreshToken, expirationToken },
+      where: { email: user.email },
+    });
+
+    response
+      .cookie('access_token', accessToken, {
+        domain: this.clientDomain,
+        expires: new Date(new Date().getTime() + 1000 * 60 * 60),
+        httpOnly: true,
+        sameSite: 'strict',
+      })
+      .cookie('refresh_token', refreshToken, {
+        domain: this.clientDomain,
+        expires: expirationToken,
+        httpOnly: true,
+        sameSite: 'strict',
+      });
   }
 }
