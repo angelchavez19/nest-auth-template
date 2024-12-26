@@ -24,7 +24,7 @@ export class EmailService {
     await this.transporter.sendMail({
       from: process.env.EMAIL_HOST_USER,
       to: email,
-      subject,
+      subject: `${subject} <${process.env.EMAIL_HOST_USER}>`,
       text,
       html,
     });

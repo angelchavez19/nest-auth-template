@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { EmailService } from 'src/providers/email/email';
-import { PrismaService } from 'src/providers/prisma/prisma';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { AccountModule } from './modules/account/account.module';
+import { PasswordModule } from './modules/password/password.module';
+import { SessionModule } from './modules/session/session.module';
+import { SocialModule } from './modules/social/social.module';
+import { TwofaModule } from './modules/twofa/twofa.module';
 
 @Module({
-  imports: [],
-  controllers: [AuthController],
-  providers: [AuthService, ConfigService, EmailService, PrismaService],
+  imports: [
+    AccountModule,
+    PasswordModule,
+    SessionModule,
+    SocialModule,
+    TwofaModule,
+  ],
 })
 export class AuthModule {}

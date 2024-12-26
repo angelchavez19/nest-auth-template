@@ -3,6 +3,6 @@ import { RolesModule } from './roles/roles.module';
 import { PermissionsModule } from './permissions/permissions.module';
 
 @Module({
-  imports: [RolesModule, PermissionsModule]
+  imports: [RolesModule, PermissionsModule],
 })
 export class AdminModule {}
