@@ -7,6 +7,7 @@ import { AuthCommonService } from '../../common.service';
 import { EmailService } from 'src/providers/email/email';
 import { getCreateAccountEmail } from '../../template-email/create-account.email';
 import { EmailDTO } from '../../dto/email.dto';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Injectable()
 export class AccountService {
@@ -16,29 +17,45 @@ export class AccountService {
     private readonly config: ConfigCommonService,
     private readonly authCommon: AuthCommonService,
     private readonly email: EmailService,
+    private readonly logger: LoggerCommonService,
   ) {}
 
   async confirmEmail(token: string) {
-    if (!token)
+    if (!token) {
+      this.logger.logger.error('Token is missing for email confirmation');
       throw new HttpException('Token is required', HttpStatus.BAD_REQUEST);
+    }
 
     try {
       this.authCommon.verifyJWT(token);
-    } catch {
+      this.logger.logger.info('JWT verified successfully', { token });
+    } catch (error) {
+      this.logger.logger.error('Invalid JWT during email confirmation', {
+        error,
+      });
       throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
 
     const existingUser = await this.prismaCommon.getExistingUserByToken(token);
 
-    if (!existingUser || existingUser.isEmailVerified)
+    if (!existingUser || existingUser.isEmailVerified) {
+      this.logger.logger.error('User not found or already verified', { token });
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
 
     try {
       await this.prisma.user.update({
         data: { token: null, isEmailVerified: true },
         where: { token },
       });
-    } catch {
+      this.logger.logger.info('User email verified successfully', {
+        userId: existingUser.id,
+      });
+    } catch (error) {
+      this.logger.logger.error(
+        'Error updating user during email verification',
+        { error },
+      );
       throw new HttpException('Invalid token', HttpStatus.BAD_REQUEST);
     }
   }
@@ -48,14 +65,19 @@ export class AccountService {
       data.email,
     );
 
-    if (existingUser)
+    if (existingUser) {
+      this.logger.logger.error(
+        'Attempt to create account with existing email',
+        { email: data.email },
+      );
       throw new HttpException('User already exists.', HttpStatus.CONFLICT);
+    }
 
     const token = this.authCommon.getJWT();
     const url = `${this.config.clientUrl}/auth/account/confirm?token=${token}`;
 
     try {
-      await this.prisma.user.create({
+      const newUser = await this.prisma.user.create({
         data: {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -65,13 +87,22 @@ export class AccountService {
           roleId: data.roleId || 1,
         },
       });
+      this.logger.logger.info('User account created successfully', {
+        userId: newUser.id,
+      });
     } catch (error) {
       if (error.code === 'P2002') {
+        this.logger.logger.error('Duplicate email during account creation', {
+          email: data.email,
+        });
         throw new HttpException(
           `The email ${data.email} is already in use.`,
           HttpStatus.CONFLICT,
         );
       }
+      this.logger.logger.error('Unexpected error during account creation', {
+        error,
+      });
       throw new HttpException(
         'An unexpected error occurred while creating the user.',
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -86,6 +117,9 @@ export class AccountService {
         url,
       }),
     );
+    this.logger.logger.info('Confirmation email sent successfully', {
+      email: data.email,
+    });
   }
 
   async refreshToken(data: EmailDTO) {
@@ -93,11 +127,20 @@ export class AccountService {
       data.email,
     );
 
-    if (!existingUser)
+    if (!existingUser) {
+      this.logger.logger.error(
+        'Attempt to refresh token for non-existing user',
+        { email: data.email },
+      );
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
 
-    if (existingUser.isEmailVerified)
+    if (existingUser.isEmailVerified) {
+      this.logger.logger.info('Attempt to refresh token for verified user', {
+        email: data.email,
+      });
       throw new HttpException('User account is confirmed', HttpStatus.CONFLICT);
+    }
 
     const token = this.authCommon.getJWT();
     const url = `${this.config.clientUrl}/auth/account/confirm?token=${token}`;
@@ -105,6 +148,9 @@ export class AccountService {
     await this.prisma.user.update({
       data: { token },
       where: { id: existingUser.id },
+    });
+    this.logger.logger.info('Token refreshed successfully', {
+      userId: existingUser.id,
     });
 
     await this.email.sendMail(
@@ -115,5 +161,8 @@ export class AccountService {
         url,
       }),
     );
+    this.logger.logger.info('Confirmation email resent successfully', {
+      email: existingUser.email,
+    });
   }
 }

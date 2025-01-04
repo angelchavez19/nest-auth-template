@@ -6,12 +6,14 @@ import { TwoFactorAuthenticationManager } from 'src/common/2fa.common';
 import { ConfigCommonService } from 'src/common/config.common';
 import { AuthCommonService } from '../../common.service';
 import { PrismaCommonService } from 'src/common/prisma.common';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Module({
   controllers: [TwofaController],
   providers: [
     AuthCommonService,
     ConfigCommonService,
+    LoggerCommonService,
     PrismaCommonService,
     PrismaService,
     TwoFactorAuthenticationManager,

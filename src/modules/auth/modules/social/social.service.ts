@@ -13,6 +13,7 @@ import {
   GoogleUserCredentialsI,
   GoogleUserInfoI,
 } from 'src/types/google-credentials.type';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Injectable()
 export class SocialService {
@@ -21,38 +22,55 @@ export class SocialService {
     private readonly configCommon: ConfigCommonService,
     private readonly prisma: PrismaService,
     private readonly prismaCommon: PrismaCommonService,
+    private readonly logger: LoggerCommonService,
   ) {}
 
   async githubLogin(res: Response, code: string) {
-    const userCredentials = await this._getGithubUserInfo(code);
+    try {
+      const userCredentials = await this._getGithubUserInfo(code);
 
-    const existingUser = await this.prismaCommon.getExistingUserByEmail(
-      userCredentials.email,
-    );
+      const existingUser = await this.prismaCommon.getExistingUserByEmail(
+        userCredentials.email,
+      );
 
-    if (existingUser) {
-      await this.authCommon.generateSessionTokens(existingUser, res);
-    } else {
-      try {
-        const user = await this.prisma.user.create({
-          data: {
-            firstName: userCredentials.name,
-            email: userCredentials.email,
-            profileImage: userCredentials.avatar_url,
-            provider: 'GITHUB',
-            roleId: 1,
-            isEmailVerified: true,
-          },
-          select: this.prismaCommon.selectExistingUser,
+      if (existingUser) {
+        this.logger.logger.info('Existing user logging in', {
+          userId: existingUser.id,
+          provider: 'GITHUB',
         });
-        await this.authCommon.generateSessionTokens(user, res);
-      } catch {
-        throw new HttpException('Something wrong', HttpStatus.CONFLICT);
+        await this.authCommon.generateSessionTokens(existingUser, res);
+      } else {
+        try {
+          const user = await this.prisma.user.create({
+            data: {
+              firstName: userCredentials.name,
+              email: userCredentials.email,
+              profileImage: userCredentials.avatar_url,
+              provider: 'GITHUB',
+              roleId: 1,
+              isEmailVerified: true,
+            },
+            select: this.prismaCommon.selectExistingUser,
+          });
+          this.logger.logger.info('New user created via GitHub', {
+            userId: user.id,
+            email: user.email,
+          });
+          await this.authCommon.generateSessionTokens(user, res);
+        } catch (err) {
+          this.logger.logger.error('Error creating user via GitHub', {
+            reason: err.message,
+          });
+          throw new HttpException('Something went wrong', HttpStatus.CONFLICT);
+        }
       }
-    }
 
-    res.redirect(this.configCommon.clientUrl);
-    res.send();
+      res.redirect(this.configCommon.clientUrl);
+      res.send();
+    } catch (err) {
+      this.logger.logger.error('GitHub login failed', { reason: err.message });
+      throw err;
+    }
   }
 
   async _getGithubUserInfo(code: string) {
@@ -69,7 +87,13 @@ export class SocialService {
         },
       );
 
-      if (responseUser.data.email) return responseUser.data;
+      if (responseUser.data.email) {
+        this.logger.logger.info('GitHub user info retrieved', {
+          userId: responseUser.data.id,
+          email: responseUser.data.email,
+        });
+        return responseUser.data;
+      }
       const responseUserEmail = await axios.get<GithubUserEmailI[]>(
         'https://api.github.com/user/emails',
         {
@@ -83,6 +107,9 @@ export class SocialService {
       responseUser.data.email = userEmail.email;
       return responseUser.data;
     } catch (err: any) {
+      this.logger.logger.error('Error fetching GitHub user info', {
+        reason: err.message,
+      });
       throw Error(err);
     }
   }
@@ -98,52 +125,79 @@ export class SocialService {
 
     const queryString = new URLSearchParams(options);
 
-    const response = await axios.post<string>(`${rootUrl}?${queryString}`, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    try {
+      const response = await axios.post<string>(`${rootUrl}?${queryString}`, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
 
-    const data = new URLSearchParams(response.data);
+      const data = new URLSearchParams(response.data);
 
-    if (data.get('error') && !data.get('access_token'))
-      throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+      if (data.get('error') && !data.get('access_token')) {
+        this.logger.logger.error('GitHub token retrieval failed', {
+          reason: data.get('error'),
+        });
+        throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+      }
 
-    return data;
+      this.logger.logger.info('GitHub token retrieved successfully');
+      return data;
+    } catch (err) {
+      this.logger.logger.error('Error retrieving GitHub token', {
+        reason: err.message,
+      });
+      throw err;
+    }
   }
 
   async googleLogin(res: Response, code: string) {
-    const userInfo = await this._getGoogleUserInfo(code);
+    try {
+      const userInfo = await this._getGoogleUserInfo(code);
 
-    const existingUser = await this.prismaCommon.getExistingUserByEmail(
-      userInfo.email,
-    );
+      const existingUser = await this.prismaCommon.getExistingUserByEmail(
+        userInfo.email,
+      );
 
-    if (existingUser) {
-      await this.authCommon.generateSessionTokens(existingUser, res);
-    } else {
-      try {
-        const user = await this.prisma.user.create({
-          data: {
-            firstName: userInfo.given_name,
-            lastName: userInfo.family_name,
-            email: userInfo.email,
-            profileImage: userInfo.picture,
-            provider: 'GOOGLE',
-            roleId: 1,
-            isEmailVerified: true,
-          },
-          select: this.prismaCommon.selectExistingUser,
+      if (existingUser) {
+        this.logger.logger.info('Existing user logging in via Google', {
+          userId: existingUser.id,
+          provider: 'GOOGLE',
         });
-
-        await this.authCommon.generateSessionTokens(user, res);
-      } catch {
-        throw new HttpException('Something wrong', HttpStatus.CONFLICT);
+        await this.authCommon.generateSessionTokens(existingUser, res);
+      } else {
+        try {
+          const user = await this.prisma.user.create({
+            data: {
+              firstName: userInfo.given_name,
+              lastName: userInfo.family_name,
+              email: userInfo.email,
+              profileImage: userInfo.picture,
+              provider: 'GOOGLE',
+              roleId: 1,
+              isEmailVerified: true,
+            },
+            select: this.prismaCommon.selectExistingUser,
+          });
+          this.logger.logger.info('New user created via Google', {
+            userId: user.id,
+            email: user.email,
+          });
+          await this.authCommon.generateSessionTokens(user, res);
+        } catch (err) {
+          this.logger.logger.error('Error creating user via Google', {
+            reason: err.message,
+          });
+          throw new HttpException('Something went wrong', HttpStatus.CONFLICT);
+        }
       }
-    }
 
-    res.redirect(this.configCommon.clientUrl);
-    res.send();
+      res.redirect(this.configCommon.clientUrl);
+      res.send();
+    } catch (err) {
+      this.logger.logger.error('Google login failed', { reason: err.message });
+      throw err;
+    }
   }
 
   async _getGoogleUserInfo(code: string) {
@@ -159,8 +213,14 @@ export class SocialService {
         },
       );
 
+      this.logger.logger.info('Google user info retrieved', {
+        email: response.data.email,
+      });
       return response.data;
-    } catch {
+    } catch (err) {
+      this.logger.logger.error('Error fetching Google user info', {
+        reason: err.message,
+      });
       throw new HttpException('Invalid user login', HttpStatus.BAD_REQUEST);
     }
   }
@@ -178,8 +238,12 @@ export class SocialService {
         },
       );
 
+      this.logger.logger.info('Google token retrieved successfully');
       return response.data;
-    } catch {
+    } catch (err) {
+      this.logger.logger.error('Error retrieving Google token', {
+        reason: err.message,
+      });
       throw new HttpException('Invalid user login', HttpStatus.BAD_REQUEST);
     }
   }

@@ -3,10 +3,14 @@ import { PrismaService } from 'src/providers/prisma/prisma';
 import { CreateRoleDTO } from './dto/create-role.dto';
 import { UpdateRoleNameDTO } from './dto/update-role-name.dto';
 import { AssignRoleDTO } from './dto/assign-role.dto';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Injectable()
 export class RolesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly logger: LoggerCommonService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getAllRoles() {
     return await this.prisma.role.findMany({
@@ -72,15 +76,35 @@ export class RolesService {
       }
     });
 
-    if (exceptionMessage)
+    if (exceptionMessage) {
+      this.logger.logger.error('Error creating role', {
+        reason: exceptionMessage,
+      });
       throw new HttpException(exceptionMessage, HttpStatus.BAD_REQUEST);
+    }
+
+    this.logger.logger.info('Role creted', {
+      name: data.name,
+      permissions: data.permissions.map((permission) => ({
+        name: permission.name,
+        route: permission.route,
+      })),
+    });
   }
 
   async updateRoleName(id: number, data: UpdateRoleNameDTO) {
-    await this.prisma.role.update({
-      data: { name: data.name },
-      where: { id },
-    });
+    try {
+      await this.prisma.role.update({
+        data: { name: data.name },
+        where: { id },
+      });
+
+      this.logger.logger.info('Role name updated', { id, name: data.name });
+    } catch {
+      this.logger.logger.error('Error updating role name', {
+        reason: 'Role not found',
+      });
+    }
   }
 
   async deleteRole(id: number) {
@@ -88,7 +112,12 @@ export class RolesService {
       await this.prisma.role.delete({
         where: { id },
       });
+
+      this.logger.logger.info('Role deleted', { id });
     } catch {
+      this.logger.logger.error('Error deleting role', {
+        reason: 'Role not found',
+      });
       throw new HttpException('Role not found', HttpStatus.NOT_FOUND);
     }
   }
@@ -99,7 +128,14 @@ export class RolesService {
         data: { roleId: data.roleId },
         where: { id: data.userId },
       });
+      this.logger.logger.info('Role assigned', {
+        roleId: data.roleId,
+        userId: data.userId,
+      });
     } catch {
+      this.logger.logger.error('Error assigning role', {
+        reason: 'User id or role id not exists',
+      });
       throw new HttpException(
         'User id or role id not exists',
         HttpStatus.NOT_FOUND,
