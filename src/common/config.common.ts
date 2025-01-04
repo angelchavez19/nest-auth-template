@@ -77,4 +77,8 @@ export class ConfigCommonService {
       this.configService.get<string>('TOTP_APP_NAME') || 'Nest Auth Template'
     );
   }
+
+  get debug(): boolean {
+    return this.configService.get<boolean>('DEBUG') || false;
+  }
 }

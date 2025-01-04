@@ -5,6 +5,7 @@ import { AuthCommonService } from '../../common.service';
 import { ConfigCommonService } from 'src/common/config.common';
 import { PrismaService } from 'src/providers/prisma/prisma';
 import { PrismaCommonService } from 'src/common/prisma.common';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Module({
   controllers: [SocialController],
@@ -12,6 +13,7 @@ import { PrismaCommonService } from 'src/common/prisma.common';
     AuthCommonService,
     SocialService,
     ConfigCommonService,
+    LoggerCommonService,
     PrismaService,
     PrismaCommonService,
   ],

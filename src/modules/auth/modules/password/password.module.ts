@@ -6,6 +6,7 @@ import { PrismaCommonService } from 'src/common/prisma.common';
 import { PrismaService } from 'src/providers/prisma/prisma';
 import { ConfigCommonService } from 'src/common/config.common';
 import { EmailService } from 'src/providers/email/email';
+import { LoggerCommonService } from 'src/common/logger.common';
 
 @Module({
   controllers: [PasswordController],
@@ -13,6 +14,7 @@ import { EmailService } from 'src/providers/email/email';
     AuthCommonService,
     ConfigCommonService,
     EmailService,
+    LoggerCommonService,
     PasswordService,
     PrismaCommonService,
     PrismaService,
