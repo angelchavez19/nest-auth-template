@@ -35,6 +35,7 @@ model User {
   role             Role      @relation(fields: [roleId], references: [id])
   isActive         Boolean   @default(true)
   isEmailVerified  Boolean   @default(false)
+  isSuperAdmin     Boolean   @default(false)
   lastLogin        DateTime?
   updatedAt        DateTime  @updatedAt
   language         String?

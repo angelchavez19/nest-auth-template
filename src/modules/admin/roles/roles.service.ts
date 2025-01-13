@@ -123,6 +123,28 @@ export class RolesService {
   }
 
   async assignRole(data: AssignRoleDTO) {
+    const user = await this.prisma.user.findUnique({
+      select: { isSuperAdmin: true },
+      where: { id: data.userId },
+    });
+
+    if (!user) {
+      this.logger.logger.error('Error assigning role', {
+        reason: 'User not found',
+      });
+      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    }
+
+    if (user.isSuperAdmin) {
+      this.logger.logger.error('Error assigning role', {
+        reason: 'Cannot assign role to super admin user',
+      });
+      throw new HttpException(
+        'Cannot assign role to super admin user',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+
     try {
       await this.prisma.user.update({
         data: { roleId: data.roleId },
@@ -134,12 +156,9 @@ export class RolesService {
       });
     } catch {
       this.logger.logger.error('Error assigning role', {
-        reason: 'User id or role id not exists',
+        reason: 'Role id not exists',
       });
-      throw new HttpException(
-        'User id or role id not exists',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('Role id not exists', HttpStatus.NOT_FOUND);
     }
   }
 }
