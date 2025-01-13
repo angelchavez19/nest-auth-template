@@ -23,7 +23,7 @@ This project is a robust authentication and authorization system developed with 
 
 1. **Role-Based Authorization**
 
-   - Roles like `admin`, `user`, or others are assigned dynamically.
+   - Roles like `ADMIN`, `USER`, or others are assigned dynamically.
    - Specific permissions are granted according to the assigned role.
 
 1. **Route Protection**
@@ -56,10 +56,6 @@ This project is a robust authentication and authorization system developed with 
 
    - Allows authentication through providers like Google and GitHub.
 
-1. **Session Management**
-
-   - Controls simultaneous sessions, allowing or restricting multiple logins.
-
 1. **Multi-Factor Authentication (MFA)**
 
    - Adds an extra layer of security with multi-factor authentication.
@@ -84,13 +80,13 @@ This project is a robust authentication and authorization system developed with 
    cd nest-auth-template
    ```
 
-2. Install the dependencies:
+1. Install the dependencies:
 
    ```bash
    npm install
    ```
 
-3. Set up the environment variables in a `.env` file:
+1. Set up the environment variables in a `.env` file:
 
    ```
    DATABASE_URL="mysql://root:mysql@localhost:3306/nestauthdb"
@@ -120,7 +116,19 @@ This project is a robust authentication and authorization system developed with 
    GITHUB_OAUTH_REDIRECT_URL=http://localhost:8000/auth/social/github
    ```
 
-4. Run the development server:
+1. Run the migrations to create the database tables:
+
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+
+1. Run prisma seed:
+
+   ```bash
+   npx prisma db seed
+   ```
+
+1. Run the development server:
    ```bash
    npm run start:dev
    ```
@@ -130,10 +138,13 @@ This project is a robust authentication and authorization system developed with 
 ## **Technologies Used**
 
 - NestJS
+- Prisma
 - JSON Web Tokens (JWT)
 - OAuth2
-- Prisma
 - Bcrypt for password encryption
+- Nodemailer for email sending
+- Speakeasy for TOTP generation
+- Winston for logging
 
 ---
 

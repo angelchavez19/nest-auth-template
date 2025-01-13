@@ -8,15 +8,14 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   @Get()
-  @Roles(['USER', 'ADMIN'])
-  @Permissions(['View Users'])
+  @Roles(['ADMIN'])
   getAllUsers() {
     return this.userService.getAllUsers();
   }
 
   @Get(':id')
   @Roles(['USER', 'ADMIN'])
-  @Permissions(['View Only User'])
+  @Permissions(['VIEW USER INFO'])
   getInfoUser(@Param('id') id: string) {
     return this.userService.getInfoUser(Number(id));
   }
