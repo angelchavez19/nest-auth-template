@@ -93,7 +93,31 @@ This project is a robust authentication and authorization system developed with 
 3. Set up the environment variables in a `.env` file:
 
    ```
-   DATABASE_URL="mysql://root:mysql@localhost:3306/nextauthdb"
+   DATABASE_URL="mysql://root:mysql@localhost:3306/nestauthdb"
+
+   JWT_SECRET_KEY=your-secret
+   ENCRYPTION_KEY=your-secret
+
+   CLIENT_DOMAIN=localhost
+   CLIENT_URL=http://localhost:5173
+
+   SERVER_DOMAIN=localhost
+   SERVER_URL=http://localhost:8000
+
+   TOTP_APP_NAME=Nest Auth Template
+
+   DEBUG=true
+
+   EMAIL_HOST=smtp.gmail.com
+   EMAIL_HOST_USER=your-email-host-user
+   EMAIL_HOST_PASSWORD=your-email-host-password
+
+   GOOGLE_OAUTH_CLIENT_ID=your-oauth-client-id
+   GOOGLE_OAUTH_CLIENT_SECRET=your-oauth-client-secret
+
+   GITHUB_OAUTH_CLIENT_ID=your-github-client-id
+   GITHUB_OAUTH_CLIENT_SECRET=your-github-client-secret
+   GITHUB_OAUTH_REDIRECT_URL=http://localhost:8000/auth/social/github
    ```
 
 4. Run the development server:
