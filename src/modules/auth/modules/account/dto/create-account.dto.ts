@@ -4,18 +4,16 @@ import {
   MinLength,
   MaxLength,
   Matches,
-  IsNumber,
-  IsOptional,
 } from 'class-validator';
 
 export class CreateAccountDTO {
   @IsString()
-  @MinLength(2, { message: 'First name must be at least 2 characters long.' })
+  @MinLength(1, { message: 'First name must be at least 1 characters long.' })
   @MaxLength(50, { message: 'First name must not exceed 50 characters.' })
   firstName: string;
 
   @IsString()
-  @MinLength(2, { message: 'Last name must be at least 2 characters long.' })
+  @MinLength(1, { message: 'Last name must be at least 1 characters long.' })
   @MaxLength(50, { message: 'Last name must not exceed 50 characters.' })
   lastName: string;
 
@@ -36,8 +34,4 @@ export class CreateAccountDTO {
     message: 'Password must not contain Unicode or invalid characters.',
   })
   password: string;
-
-  @IsOptional()
-  @IsNumber({}, { message: 'RoleId must be a number.' })
-  roleId?: number;
 }

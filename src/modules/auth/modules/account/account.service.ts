@@ -84,22 +84,13 @@ export class AccountService {
           email: data.email,
           token,
           password: this.authCommon.hashPassword(data.password),
-          roleId: data.roleId || 1,
+          roleId: 2,
         },
       });
       this.logger.logger.info('User account created successfully', {
         userId: newUser.id,
       });
     } catch (error) {
-      if (error.code === 'P2002') {
-        this.logger.logger.error('Duplicate email during account creation', {
-          email: data.email,
-        });
-        throw new HttpException(
-          `The email ${data.email} is already in use.`,
-          HttpStatus.CONFLICT,
-        );
-      }
       this.logger.logger.error('Unexpected error during account creation', {
         error,
       });
