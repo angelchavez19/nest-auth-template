@@ -75,11 +75,16 @@ export class SessionService {
       data.email,
     );
 
-    if (!existingUser || !existingUser.isEmailVerified) {
-      this.logger.logger.error('Login failed. User not found or unverified.', {
+    if (!existingUser) {
+      this.logger.logger.error('Login failed. User not found', {
         email: data.email,
       });
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    } else if (!existingUser.isEmailVerified) {
+      this.logger.logger.error('Login failed. User unverified.', {
+        email: data.email,
+      });
+      throw new HttpException('User unverified', HttpStatus.NOT_FOUND);
     }
 
     const passwordMatch = bcrypt.compareSync(
