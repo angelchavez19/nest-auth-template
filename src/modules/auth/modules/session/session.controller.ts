@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -21,8 +22,12 @@ export class SessionController {
   }
 
   @Get('refresh-token')
-  refreshToken(@Req() req: Request, @Res() res: Response) {
-    return this.sessionService.refreshToken(req, res);
+  refreshToken(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Query('lang') lang: string,
+  ) {
+    return this.sessionService.refreshToken(req, res, lang);
   }
 
   @Post('login')

@@ -6,11 +6,13 @@ import { PrismaCommonService } from 'src/common/prisma.common';
 import { AuthCommonService } from '../../common.service';
 import { PrismaService } from 'src/providers/prisma/prisma';
 import { LoggerCommonService } from 'src/common/logger.common';
+import { ConfigCommonService } from 'src/common/config.common';
 
 @Injectable()
 export class SessionService {
   constructor(
     private readonly authCommon: AuthCommonService,
+    private readonly configCommon: ConfigCommonService,
     private readonly logger: LoggerCommonService,
     private readonly prisma: PrismaService,
     private readonly prismaCommon: PrismaCommonService,
@@ -29,7 +31,11 @@ export class SessionService {
     }
   }
 
-  async refreshToken(req: Request, res: Response) {
+  async refreshToken(
+    req: Request,
+    res: Response,
+    lang: string = this.configCommon.defaultLang,
+  ) {
     const userRefreshToken = req.cookies[this.authCommon.REFRESH_TOKEN];
 
     if (!userRefreshToken) {
@@ -54,7 +60,12 @@ export class SessionService {
     }
 
     try {
-      await this.authCommon.generateSessionTokens(existingUser, res, false);
+      await this.authCommon.generateSessionTokens(
+        existingUser,
+        res,
+        lang,
+        false,
+      );
       this.logger.logger.info('Session tokens refreshed successfully.', {
         userId: existingUser.id,
       });
@@ -68,7 +79,11 @@ export class SessionService {
     }
   }
 
-  async login(data: LoginDTO, res: Response) {
+  async login(
+    data: LoginDTO,
+    res: Response,
+    lang: string = this.configCommon.defaultLang,
+  ) {
     this.logger.logger.info('Login attempt started.', { email: data.email });
 
     const existingUser = await this.prismaCommon.getExistingUserByEmail(
@@ -99,7 +114,7 @@ export class SessionService {
     }
 
     try {
-      await this.authCommon.generateSessionTokens(existingUser, res);
+      await this.authCommon.generateSessionTokens(existingUser, res, lang);
       this.logger.logger.info('User logged in successfully.', {
         userId: existingUser.id,
       });

@@ -21,11 +21,15 @@ export class SocialService {
     private readonly authCommon: AuthCommonService,
     private readonly configCommon: ConfigCommonService,
     private readonly prisma: PrismaService,
-    private readonly prismaCommon: PrismaCommonService,
     private readonly logger: LoggerCommonService,
+    private readonly prismaCommon: PrismaCommonService,
   ) {}
 
-  async githubLogin(res: Response, code: string) {
+  async githubLogin(
+    res: Response,
+    code: string,
+    lang: string = this.configCommon.defaultLang,
+  ) {
     try {
       const userCredentials = await this._getGithubUserInfo(code);
 
@@ -38,7 +42,7 @@ export class SocialService {
           userId: existingUser.id,
           provider: 'GITHUB',
         });
-        await this.authCommon.generateSessionTokens(existingUser, res);
+        await this.authCommon.generateSessionTokens(existingUser, res, lang);
       } else {
         try {
           const user = await this.prisma.user.create({
@@ -56,7 +60,7 @@ export class SocialService {
             userId: user.id,
             email: user.email,
           });
-          await this.authCommon.generateSessionTokens(user, res);
+          await this.authCommon.generateSessionTokens(user, res, lang);
         } catch (err) {
           this.logger.logger.error('Error creating user via GitHub', {
             reason: err.message,
@@ -65,7 +69,7 @@ export class SocialService {
         }
       }
 
-      res.redirect(this.configCommon.clientUrl);
+      res.redirect(`${this.configCommon.clientUrl}/${lang}/app`);
       res.send();
     } catch (err) {
       this.logger.logger.error('GitHub login failed', { reason: err.message });
@@ -151,7 +155,11 @@ export class SocialService {
     }
   }
 
-  async googleLogin(res: Response, code: string) {
+  async googleLogin(
+    res: Response,
+    code: string,
+    lang: string = this.configCommon.defaultLang,
+  ) {
     try {
       const userInfo = await this._getGoogleUserInfo(code);
 
@@ -164,7 +172,7 @@ export class SocialService {
           userId: existingUser.id,
           provider: 'GOOGLE',
         });
-        await this.authCommon.generateSessionTokens(existingUser, res);
+        await this.authCommon.generateSessionTokens(existingUser, res, lang);
       } else {
         try {
           const user = await this.prisma.user.create({
@@ -183,7 +191,7 @@ export class SocialService {
             userId: user.id,
             email: user.email,
           });
-          await this.authCommon.generateSessionTokens(user, res);
+          await this.authCommon.generateSessionTokens(user, res, lang);
         } catch (err) {
           this.logger.logger.error('Error creating user via Google', {
             reason: err.message,
@@ -192,7 +200,7 @@ export class SocialService {
         }
       }
 
-      res.redirect(this.configCommon.clientUrl);
+      res.redirect(`${this.configCommon.clientUrl}/${lang}/app`);
       res.send();
     } catch (err) {
       this.logger.logger.error('Google login failed', { reason: err.message });

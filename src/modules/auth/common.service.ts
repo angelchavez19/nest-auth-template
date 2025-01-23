@@ -64,6 +64,7 @@ export class AuthCommonService {
   async generateSessionTokens(
     user: ExistingUserI,
     response: Response,
+    lang: string,
     twoFA: boolean = true,
   ) {
     const cookieConfig: CookieOptions = {
@@ -78,11 +79,11 @@ export class AuthCommonService {
       const token = this.getJWT({ userId: user.id }, { expiresIn: '5m' });
       response.cookie(this.USER, token, cookieConfig);
       this.clearTokenCookies(response);
-      this.logger.logger.error("User has 2FA enabled and isn't using it", {
-        userId: user.id,
-        twoFactorEnabled: true,
-      });
-      throw new HttpException('2fa_required', HttpStatus.UNAUTHORIZED);
+      response.redirect(
+        `${this.configCommon.clientUrl}/${lang}/auth/two-factor`,
+      );
+      response.send();
+      return;
     }
 
     const accessToken = this.generateAccessToken(user);

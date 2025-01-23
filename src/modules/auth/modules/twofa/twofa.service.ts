@@ -6,18 +6,58 @@ import { JWTUserPayloadI } from 'src/types/jwt.type';
 import { AuthCommonService } from '../../common.service';
 import { PrismaCommonService } from 'src/common/prisma.common';
 import { LoggerCommonService } from 'src/common/logger.common';
+import { ConfigCommonService } from 'src/common/config.common';
 
 @Injectable()
 export class TwofaService {
   constructor(
     private readonly authCommon: AuthCommonService,
-    private readonly prismaCommon: PrismaCommonService,
+    private readonly configCommon: ConfigCommonService,
     private readonly logger: LoggerCommonService,
+    private readonly prismaCommon: PrismaCommonService,
     private readonly prisma: PrismaService,
     private readonly twoFAManager: TwoFactorAuthenticationManager,
   ) {}
 
-  async authenticate(req: Request, res: Response, totpCode: string) {
+  async getTotpCode(user: JWTUserPayloadI) {
+    if (!user) {
+      this.logger.logger.error(
+        'Failed to activate 2FA: User not authenticated',
+      );
+      throw new HttpException('User not authenticated', HttpStatus.FORBIDDEN);
+    }
+
+    const _user = await this.prisma.user.findUnique({
+      select: {
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
+        twoFactorIV: true,
+      },
+      where: { id: user.id },
+    });
+
+    if (!_user.twoFactorEnabled) {
+      throw new HttpException('MFA not enabled', HttpStatus.CONFLICT);
+    }
+
+    const secret = this.twoFAManager.decryptSecret(
+      _user.twoFactorSecret,
+      _user.twoFactorIV,
+    );
+
+    return {
+      otpauth_url: new URL(
+        `otpauth://totp/${this.configCommon.totpAppName}?secret=${secret}`,
+      ).toString(),
+    };
+  }
+
+  async authenticate(
+    req: Request,
+    res: Response,
+    totpCode: string,
+    lang: string = this.configCommon.defaultLang,
+  ) {
     const userIdJWT = req.cookies[this.authCommon.USER];
 
     if (!userIdJWT) {
@@ -70,7 +110,8 @@ export class TwofaService {
       userId: user.id,
     });
 
-    await this.authCommon.generateSessionTokens(user, res, false);
+    await this.authCommon.generateSessionTokens(user, res, lang, false);
+    res.redirect(`${this.configCommon.clientUrl}/${lang}/app`);
     res.send();
   }
 

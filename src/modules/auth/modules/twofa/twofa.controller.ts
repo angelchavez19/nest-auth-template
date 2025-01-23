@@ -8,6 +8,11 @@ import { Request, Response } from 'express';
 export class TwofaController {
   constructor(private readonly twofaService: TwofaService) {}
 
+  @Get()
+  getTotpCode(@GetUser() user: JWTUserPayloadI) {
+    return this.twofaService.getTotpCode(user);
+  }
+
   @Get('authenticate')
   authenticate(
     @Req() req: Request,

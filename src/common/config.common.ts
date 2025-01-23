@@ -81,4 +81,8 @@ export class ConfigCommonService {
   get debug(): boolean {
     return this.configService.get<boolean>('DEBUG') || false;
   }
+
+  get defaultLang(): string {
+    return this.configService.get<string>('DEFAULT_LANG') || 'en';
+  }
 }

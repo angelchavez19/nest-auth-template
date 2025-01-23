@@ -7,12 +7,20 @@ export class SocialController {
   constructor(private readonly socialService: SocialService) {}
 
   @Get('github')
-  githubLogin(@Res() response: Response, @Query('code') code: string) {
-    return this.socialService.githubLogin(response, code);
+  githubLogin(
+    @Res() response: Response,
+    @Query('code') code: string,
+    @Query('lang') lang: string,
+  ) {
+    return this.socialService.githubLogin(response, code, lang);
   }
 
   @Get('google')
-  googleLogin(@Res() response: Response, @Query('code') code: string) {
-    return this.socialService.googleLogin(response, code);
+  googleLogin(
+    @Res() response: Response,
+    @Query('code') code: string,
+    @Query('lang') lang: string,
+  ) {
+    return this.socialService.googleLogin(response, code, lang);
   }
 }

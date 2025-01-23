@@ -11,9 +11,9 @@ import { LoggerCommonService } from 'src/common/logger.common';
   controllers: [SocialController],
   providers: [
     AuthCommonService,
-    SocialService,
     ConfigCommonService,
     LoggerCommonService,
+    SocialService,
     PrismaService,
     PrismaCommonService,
   ],
