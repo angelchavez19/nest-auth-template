@@ -60,7 +60,10 @@ export class AccountService {
     }
   }
 
-  async createAccount(data: CreateAccountDTO) {
+  async createAccount(
+    data: CreateAccountDTO,
+    lang: string = this.config.defaultLang,
+  ) {
     const existingUser = await this.prismaCommon.getExistingUserByEmail(
       data.email,
     );
@@ -106,6 +109,7 @@ export class AccountService {
         firstName: data.firstName,
         lastName: data.lastName,
         url,
+        lang,
       }),
     );
     this.logger.logger.info('Confirmation email sent successfully', {
@@ -113,7 +117,7 @@ export class AccountService {
     });
   }
 
-  async refreshToken(data: EmailDTO) {
+  async refreshToken(data: EmailDTO, lang: string = this.config.defaultLang) {
     const existingUser = await this.prismaCommon.getExistingUserByEmail(
       data.email,
     );
@@ -150,6 +154,7 @@ export class AccountService {
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
         url,
+        lang,
       }),
     );
     this.logger.logger.info('Confirmation email resent successfully', {

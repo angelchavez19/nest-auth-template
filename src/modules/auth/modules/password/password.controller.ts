@@ -9,8 +9,8 @@ export class PasswordController {
 
   @Post('request-change')
   @HttpCode(200)
-  requestChange(@Body() data: EmailDTO) {
-    return this.passwordService.requestChange(data);
+  requestChange(@Body() data: EmailDTO, @Query('lang') lang: string) {
+    return this.passwordService.requestChange(data, lang);
   }
 
   @Post('confirm-change')

@@ -14,13 +14,13 @@ export class AccountController {
 
   @Post('')
   @HttpCode(200)
-  createAccount(@Body() data: CreateAccountDTO) {
-    return this.accountService.createAccount(data);
+  createAccount(@Body() data: CreateAccountDTO, @Query('lang') lang: string) {
+    return this.accountService.createAccount(data, lang);
   }
 
   @Post('refresh-token')
   @HttpCode(200)
-  refreshToken(@Body() data: EmailDTO) {
-    return this.accountService.refreshToken(data);
+  refreshToken(@Body() data: EmailDTO, @Query('lang') lang: string) {
+    return this.accountService.refreshToken(data, lang);
   }
 }

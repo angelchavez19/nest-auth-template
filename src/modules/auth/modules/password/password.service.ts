@@ -20,7 +20,7 @@ export class PasswordService {
     private readonly logger: LoggerCommonService,
   ) {}
 
-  async requestChange(data: EmailDTO) {
+  async requestChange(data: EmailDTO, lang: string = this.config.defaultLang) {
     this.logger.logger.info('Password change requested', { email: data.email });
 
     const existingUser = await this.prismaCommon.getExistingUserByEmail(
@@ -48,7 +48,7 @@ export class PasswordService {
     }
 
     const token = this.authCommon.getJWT();
-    const url = `${this.config.clientUrl}/auth/password/confirm-change?token=${token}`;
+    const url = `${this.config.clientUrl}/${lang}/auth/password/confirm-change?token=${token}`;
 
     try {
       await this.prisma.user.update({
@@ -76,6 +76,7 @@ export class PasswordService {
           email: data.email,
           firstName: existingUser.firstName,
           url,
+          lang,
         }),
       );
       this.logger.logger.info('Password change email sent', {
