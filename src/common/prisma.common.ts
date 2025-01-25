@@ -28,6 +28,7 @@ export class PrismaCommonService {
     password: true,
     firstName: true,
     lastName: true,
+    provider: true,
     roleId: true,
     role: {
       select: { name: true },

@@ -87,7 +87,11 @@ export class AccountService {
           email: data.email,
           token,
           password: this.authCommon.hashPassword(data.password),
-          roleId: 2,
+          role: {
+            connect: {
+              name: this.config.defaultUserRole,
+            },
+          },
         },
       });
       this.logger.logger.info('User account created successfully', {

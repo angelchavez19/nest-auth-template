@@ -85,4 +85,8 @@ export class ConfigCommonService {
   get defaultLang(): string {
     return this.configService.get<string>('DEFAULT_LANG') || 'en';
   }
+
+  get defaultUserRole(): string {
+    return this.configService.get<string>('DEFAULT_USER_ROLE') || 'USER';
+  }
 }

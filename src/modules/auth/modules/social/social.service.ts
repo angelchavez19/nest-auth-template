@@ -37,7 +37,21 @@ export class SocialService {
         userCredentials.email,
       );
 
-      if (existingUser) {
+      if (existingUser && existingUser.provider !== 'GITHUB') {
+        this.logger.logger.error(
+          'Error: Existing user attempted to log in with a different provider.',
+          {
+            userId: existingUser.id,
+            expectedProvider: 'GITHUB',
+            currentProvider: existingUser.provider,
+          },
+        );
+        res.redirect(
+          `${this.configCommon.clientUrl}/${lang}/auth/login?error=provider_error&provider=${existingUser.provider}`,
+        );
+        res.status(409).send();
+        return;
+      } else if (existingUser && existingUser.provider === 'GITHUB') {
         this.logger.logger.info('Existing user logging in', {
           userId: existingUser.id,
           provider: 'GITHUB',
@@ -51,8 +65,12 @@ export class SocialService {
               email: userCredentials.email,
               profileImage: userCredentials.avatar_url,
               provider: 'GITHUB',
-              roleId: 1,
               isEmailVerified: true,
+              role: {
+                connect: {
+                  name: this.configCommon.defaultUserRole,
+                },
+              },
             },
             select: this.prismaCommon.selectExistingUser,
           });
@@ -167,7 +185,21 @@ export class SocialService {
         userInfo.email,
       );
 
-      if (existingUser) {
+      if (existingUser && existingUser.provider !== 'GOOGLE') {
+        this.logger.logger.error(
+          'Error: Existing user attempted to log in with a different provider.',
+          {
+            userId: existingUser.id,
+            expectedProvider: 'GOOGLE',
+            currentProvider: existingUser.provider,
+          },
+        );
+        res.redirect(
+          `${this.configCommon.clientUrl}/${lang}/auth/login?error=provider_error&provider=${existingUser.provider}`,
+        );
+        res.status(409).send();
+        return;
+      } else if (existingUser && existingUser.provider === 'GOOGLE') {
         this.logger.logger.info('Existing user logging in via Google', {
           userId: existingUser.id,
           provider: 'GOOGLE',
@@ -182,8 +214,12 @@ export class SocialService {
               email: userInfo.email,
               profileImage: userInfo.picture,
               provider: 'GOOGLE',
-              roleId: 1,
               isEmailVerified: true,
+              role: {
+                connect: {
+                  name: this.configCommon.defaultUserRole,
+                },
+              },
             },
             select: this.prismaCommon.selectExistingUser,
           });
